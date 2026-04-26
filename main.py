@@ -72,8 +72,7 @@ class MyBot(BaseBot):
         elif msg == "!пара":
             room_users = (await self.highrise.get_room_users()).content
             if len(room_users) < 2:
-                await self.highrise.chat("В комнате слишком мало людей для поиска пары. Зови друзей! 1️⃣")
-[26.04.2026 16:15] Прости. Прощай. Привет.#Фимозик: return
+                await self.highrise.chat("В комнате слишком мало людей для поиска пары. Зови друзей! 1️⃣")return
             
             potential_partner = random.choice([u for u, p in room_users if u.id != user.id])
             love_percent = random.randint(50, 100)
