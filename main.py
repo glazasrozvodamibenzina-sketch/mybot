@@ -1,4 +1,4 @@
-[26.04.2026 16:15] Прости. Прощай. Привет.#Фимозик: import random
+import random
 import asyncio
 from highrise import BaseBot, User, Position
 from highrise.main import main
