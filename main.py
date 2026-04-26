@@ -1,21 +1,19 @@
 import asyncio
 import random
+import os
 from highrise import BaseBot, User, Position
 from highrise.models import SessionMetadata
+from highrise.__main__ import main # Для автозапуска
 
-# === НАСТРОЙКИ (CONFIG) ===
-class config:
-    prefix = '!'
-    botID = '6987046999e626661408c5ed1f3e5a151ba242fff2ed820c5df16bcfbe28bc67' # Твой Токен сюда тоже можно
-    ownerName = 'ТВОЙ_НИК'
-    roomID = '6851d25724cd01791ef3c7e2'
+# === ДАННЫЕ ДЛЯ ВХОДА ===
+ROOM_ID = "6851d25724cd01791ef3c7e2"
+API_TOKEN = "6987046999e626661408c5ed1f3e5a151ba242fff2ed820c5df16bcfbe28bc67"
 
-# === ОСНОВНОЙ КОД БОТА ===
 class MyBot(BaseBot):
     def __init__(self):
         super().__init__()
-        self.dancing_users = {}
-        self.proposals = {}
+        self.dancing_users = {} 
+        self.proposals = {}    
         self.emotes_list = [
             "emote-kiss", "emote-no", "emote-sad", "emote-yes", "emote-laughing",
             "emote-hello", "emote-wave", "emote-shy", "emote-tired", "emoji-angry",
@@ -33,70 +31,72 @@ class MyBot(BaseBot):
         ]
 
     async def on_start(self, session_metadata: SessionMetadata):
-        print(f"✅ Бот {config.ownerName} запущен в комнате {config.roomID}")
-        # Начальная позиция
-        await self.highrise.teleport(self.id, Position(x=10, y=0, z=10, facing='EntityFacing.FrontRight'))
+        print("✅ БОТ В СЕТИ! Иди в комнату и проверяй.")
+        await self.highrise.teleport(self.id, Position(x=10, y=0.5, z=10, facing='EntityFacing.FrontRight'))
 
     async def on_user_join(self, user: User, position):
-        await asyncio.sleep(1.5)
-        await self.highrise.chat(f"🥂 Добро пожаловать в Бар, {user.username}! Пиши цифру (1-55) или '!налить'!")
+        await asyncio.sleep(2)
+        await self.highrise.chat(f"🥂 Привет, {user.username}! Танцуй (1-55), пей (!налить) или женись (брак с @имя)!")
 
     async def on_chat(self, user: User, message: str):
         msg = message.lower().strip()
 
-        # Команда фиксации на месте
-        if msg == f"{config.prefix}сюда":
+        # Команда позвать бота к себе
+        if msg == "!сюда":
             room_users = await self.highrise.get_room_users()
             for room_user, pos in room_users.content:
                 if room_user.id == user.id:
                     await self.highrise.teleport(self.id, pos)
-                    await self.highrise.chat(f"🫡 Пост принял!")
-                    break
+                    await self.highrise.chat(f"🫡 Я тут!")
 
-        # Эмоции 1-55
+        # Танцы по цифрам
         if msg.isdigit():
             num = int(msg)
             if 1 <= num <= len(self.emotes_list):
                 emote = self.emotes_list[num-1]
                 self.dancing_users[user.id] = emote
-                await self.highrise.chat(f"💃 Танцуем номер {num} (20 мин). Напиши '0', чтобы стоп.")
+                await self.highrise.chat(f"💃 Танцуем # {num} (20 мин). Пиши '0' для стопа.")
                 asyncio.create_task(self.loop_emote(user.id, emote))
             elif num == 0:
                 if user.id in self.dancing_users:
                     del self.dancing_users[user.id]
-                    await self.highrise.chat(f"⏸️ {user.username} остановился.")
+                    await self.highrise.chat(f"⏸️ Стоп для {user.username}")
 
         # Бармен
-        if msg == f"{config.prefix}налить":
-            drinks = ["Коктейль 🍸", "Виски 🔥", "Сок 🍹", "Шампанское 🥂"]
-            await self.highrise.chat(f"🍹 {user.username}, ваш {random.choice(drinks)} готов!")
+        if msg == "!налить":
+            drink = random.choice(["Мартини 🍸", "Виски 🥃", "Коктейль 🍹"])
+            await self.highrise.chat(f"🍹 Держи свой {drink}, {user.username}!")
             await self.highrise.send_emote("emote-lust", user.id)
 
         # Свадьбы
         if msg.startswith("брак с"):
-            target_name = message.replace("брак с", "").strip().replace("@", "")
-            room_users = await self.highrise.get_room_users()
-            target_user = next((u for u, p in room_users.content if u.username.lower() == target_name.lower()), None)
-            if target_user:
-                self.proposals[target_user.id] = {"from": user.username, "to": target_user.username}
-                await self.highrise.chat(f"💍 {target_user.username}, {user.username} зовет тебя замуж/жениться! Ответь 'Да' или 'Нет'")
+            target = message.replace("брак с", "").strip().replace("@", "")
+            await self.highrise.chat(f"💍 {target}, тебе сделали предложение! Ответь 'Да' или 'Нет'")
 
-        if msg == "да" and user.id in self.proposals:
-            p = self.proposals[user.id]
-            await self.highrise.chat(f"🎉 ГОРЬКО! {p['from']} и {p['to']} теперь пара! ❤️")
+        if msg == "да":
+            await self.highrise.chat(f"🎉 ГОРЬКО! ❤️")
             await self.highrise.send_emote("emote-kiss", user.id)
-            del self.proposals[user.id]
-
-        # Разговоры
-        if "как дела" in msg:
-            await self.highrise.chat(f"Шикарно, {user.username}! Наливаю напитки!")
 
     async def loop_emote(self, user_id, emote):
         for _ in range(120):
             if user_id not in self.dancing_users or self.dancing_users[user_id] != emote:
                 break
-            try:
-                await self.highrise.send_emote(emote, user_id)
-            except:
-                break
+            try: await self.highrise.send_emote(emote, user_id)
+            except: break
             await asyncio.sleep(10.5)
+
+# === ЭТА ЧАСТЬ ЗАПУСКАЕТ БОТА САМА ===
+if __name__ == "__main__":
+    import subprocess
+    import sys
+    
+    # Авто-установка библиотеки, если её нет
+    try:
+        import highrise
+    except ImportError:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "highrise-bot-sdk"])
+    
+    # Запуск бота с твоими данными
+    from highrise.__main__ import main
+    sys.argv = ["highrise", "main:MyBot", ROOM_ID, API_TOKEN]
+    main()
