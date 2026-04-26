@@ -1,6 +1,6 @@
 import random
 import asyncio
-from highrise import BaseBot, User, Position, AnchorPosition
+from highrise import BaseBot, User, Position
 from highrise.__main__ import main
 
 class MyBot(BaseBot):
@@ -9,21 +9,16 @@ class MyBot(BaseBot):
         self.pending_marriages = {}
 
     async def on_start(self, session_metadata):
-        print("Бот Купидон запущен!")
-        # Бот напишет это, как только появится в комнате
-        await self.highrise.chat("Я в эфире и готов венчать сердца! ❤️ Пиши !пара или !брак @ник")
+        print("✅ Бот-Купидон успешно вошел в игру!")
+        await self.highrise.chat("Я в эфире! ❤️ Ищешь любовь? Пиши !пара. Хочешь зажечь? Пиши цифру от 1 до 50!")
 
     async def on_user_join(self, user: User, position):
-        greetings = [
-            f"Привет, {user.username}! Ищешь пару? Пиши !пара ✨",
-            f"Добро пожаловать, {user.username}! Напиши цифру от 1 до 50, чтобы я станцевал! 💃"
-        ]
-        await self.highrise.chat(random.choice(greetings))
+        await self.highrise.chat(f"Привет, {user.username}! ✨ Напиши !пара, чтобы найти свою судьбу!")
 
     async def on_chat(self, user: User, message: str):
         msg = message.lower().strip()
         
-        # --- 50 ЭМОЦИЙ ---
+        # --- БЛОК ЭМОЦИЙ (1-50) ---
         all_emotes = [
             "dance-breakdance", "dance-sexy", "dance-pancakes", "dance-tiktok8", "emote-skating",
             "dance-eboy", "dance-blackpink", "dance-shoppingcart", "emote-bow", "emote-curtsy",
@@ -46,7 +41,7 @@ class MyBot(BaseBot):
         if msg.startswith("!брак"):
             parts = message.split()
             if len(parts) < 2:
-                await self.highrise.chat("Напиши: !брак @имя")
+                await self.highrise.chat("Напиши: !брак @ник")
                 return
             
             target_username = parts[1].replace("@", "")
@@ -54,37 +49,48 @@ class MyBot(BaseBot):
             target_user = next((u for u, p in room_users if u.username.lower() == target_username.lower()), None)
 
             if target_user:
+                if target_user.id == user.id:
+                    await self.highrise.chat("Жениться на себе нельзя! 😂")
+                    return
                 self.pending_marriages[target_user.id] = {"proposer": user, "target": target_user}
-                await self.highrise.chat(f"💍 {target_user.username}, тебе предложили брак! Пиши 'да' или 'нет'")
+                await self.highrise.chat(f"💍 @{target_user.username}, @{user.username} предлагает тебе брак! Напиши 'да' или 'нет' в чат!")
             else:
-                await self.highrise.chat("Игрок не найден.")
+                await self.highrise.chat("Я не вижу этого игрока в комнате... 🕵️")
 
         elif msg == "да" and user.id in self.pending_marriages:
             proposer = self.pending_marriages[user.id]["proposer"]
-            await self.highrise.chat(f"🎉 ГОРЬКО! @{proposer.username} и @{user.username} теперь пара! ❤️")
+            await self.highrise.chat(f"🎉 ГОРЬКО! @{proposer.username} и @{user.username} теперь официально пара! ❤️🎊")
             await self.highrise.send_emote("emote-heartfingers", user.id)
+            await self.highrise.send_emote("emote-heartfingers", proposer.id)
+            del self.pending_marriages[user.id]
+
+        elif msg == "нет" and user.id in self.pending_marriages:
+            await self.highrise.chat("💔 Предложение отклонено...")
             del self.pending_marriages[user.id]
 
         # --- ПОИСК ПАРЫ ---
         elif msg == "!пара":
             room_users = (await self.highrise.get_room_users()).content
-            if len(room_users) > 1:
-                partner = random.choice([u for u, p in room_users if u.id != user.id])
-                await self.highrise.chat(f"🔮 Судьба шепчет: @{user.username} и @{partner.username} — идеальная пара! ❤️")
+            if len(room_users) < 2:
+                await self.highrise.chat("Ждем гостей для поиска пары! 1️⃣")
+                return
+            
+            partner = random.choice([u for u, p in room_users if u.id != user.id])
+            love_percent = random.randint(60, 100)
+            await self.highrise.chat(f"🔮 @{user.username} и @{partner.username} подходят друг другу на {love_percent}%! ❤️")
 
-        # --- КОМАНДА ПРИЗЫВА ---
+        # --- КОМАНДА ПРИЗЫВА (!сюда) ---
         elif msg == "!сюда":
             room_users = (await self.highrise.get_room_users()).content
             for u, pos in room_users:
                 if u.id == user.id:
-                    await self.highrise.teleport(self.id, pos)
+                    new_pos = Position(pos.x + 0.5, pos.y, pos.z)
+                    await self.highrise.teleport(self.id, new_pos)
+                    await self.highrise.chat("Я тут! ✨")
                     break
 
 if __name__ == "__main__":
-    # ВОТ ТУТ МЫ ПРОПИСЫВАЕМ ТВОИ ДАННЫЕ
-    # Замени 'ТВОЙ_ТОКЕН_ТУТ' на свой токен, если он не подхватится из Render
-    import os
-    room_id = "6851d25724cd01791ef3c7e2" 
-    token = os.environ.get("api_token") 
+    room_id = "6851d25724cd01791ef3c7e2"
+    token = "6987046999e626661408c5ed1f3e5a151ba242fff2ed820c5df16bcfbe28bc67"
     arun = main(MyBot(), room_id, token)
     asyncio.run(arun)
