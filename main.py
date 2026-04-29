@@ -1,34 +1,31 @@
-import random
 import asyncio
-from highrise import BaseBot, User
-from highrise.__main__ import main
+from highrise import BaseBot, User, Position
+from highrise.main import main
 
-class WelcomeBot(BaseBot):
-    async def on_start(self, session_metadata):
-        print("✅ Бот-Приветствие запущен в новой комнате!")
+class MyBot(BaseBot):
+    def init(self):
+        super().init()
 
-    async def on_user_join(self, user: User, position):
-        # Разнообразные фразы для комнаты знакомств
-        greetings = [
-            f"Привет, {user.username}! Добро пожаловать в комнату знакомств! 🌸",
-            f"Рады тебя видеть, {user.username}! Не стесняйся общаться! ✨",
-            f"Приветик, {user.username}! Надеемся, ты найдешь здесь приятную компанию. 💖",
-            f"Добро пожаловать, {user.username}! Расскажи, как твое настроение? 👋",
-            f"О, новый гость! {user.username}, заходи, присаживайся! 😊",
-            f"Привет! {user.username}, здесь все свои, располагайся! 🏠",
-            f"Хей, {user.username}! Ищешь новые знакомства? Ты в правильном месте! 💘",
-            f"Рады приветствовать! {user.username}, чувствуй себя как дома. ✨",
-            f"Приветик! {user.username}, мы как раз тебя ждали! ☕",
-            f"Добро пожаловать, {user.username}! Пусть этот вечер будет особенным! 🌟"
-        ]
+    async def on_start(self, session_metadata: dict):
+        print("Бот в сети! Захожу в комнату...")
+        # Приветствие при входе самого бота
+        await self.highrise.chat("Всем привет! Я бот-помощник. ✨")
+
+    async def on_user_join(self, user: User, position: Position):
+        # Приветствие игрока, который зашел в комнату
+        print(f"Приветствую {user.username}")
+        await self.highrise.chat(f"Добро пожаловать, {user.username}! Рады тебя видеть! ❤️")
         
-        # Ждем 2 секунды, чтобы человек успел зайти и увидеть чат
-        await asyncio.sleep(2)
-        await self.highrise.chat(random.choice(greetings))
+        # Бот машет рукой игроку
+        try:
+            await self.highrise.send_emote("emote-hello", user.id)
+        except Exception as e:
+            print(f"Ошибка при выполнении эмоции: {e}")
 
-if __name__ == "__main__":
-    # ДАННЫЕ ДЛЯ ЭТОГО БОТА
+if name == "main":
+    # Твои данные для подключения
     room_id = "69ee35fab6bcfa4b70966bac"
     token = "93356fc362c144b1364b9b56314cd27400ad3d7737a7eeff88758290dbbae28d"
     
-    asyncio.run(main(WelcomeBot(), room_id, token))
+    bot = MyBot()
+    asyncio.run(main([bot], room_id, token))
