@@ -1,31 +1,33 @@
 import asyncio
-from highrise import BaseBot, User, Position
-from highrise.main import main
+import random
+from highrise import BaseBot, __main__
+from highrise.models import SessionMetadata, User, Position
 
-class MyBot(BaseBot):
-    def init(self):
-        super().init()
-
-    async def on_start(self, session_metadata: dict):
-        print("Бот в сети! Захожу в комнату...")
-        # Приветствие при входе самого бота
-        await self.highrise.chat("Всем привет! Я бот-помощник. ✨")
-
-    async def on_user_join(self, user: User, position: Position):
-        # Приветствие игрока, который зашел в комнату
-        print(f"Приветствую {user.username}")
-        await self.highrise.chat(f"Добро пожаловать, {user.username}! Рады тебя видеть! ❤️")
+class BarBot(BaseBot):
+    async def on_start(self, session_metadata: SessionMetadata) -> None:
+        print("Бот-бармен успешно заступил на смену!")
         
-        # Бот машет рукой игроку
+        # Настройка позиции бота (X, Y, Z, направление)
+        # Если захочешь точнее подвинуть бота, поменяй эти цифры:
+        bot_position = Position(0.5, 0.0, 0.5, "FacingSouth") 
         try:
-            await self.highrise.send_emote("emote-hello", user.id)
+            await self.highrise.walk_to(bot_position)
         except Exception as e:
-            print(f"Ошибка при выполнении эмоции: {e}")
+            print(f"Ошибка при перемещении бота: {e}")
 
-if name == "main":
-    # Твои данные для подключения
-    room_id = "69ee35fab6bcfa4b70966bac"
+    async def on_user_join(self, user: User, position: Position | None = None) -> None:
+        # Уютные варианты приветствия для гостей бара
+        welcome_messages = [
+            f"Добро пожаловать в наш уютный бар, @{user.username}! 🍹 Присаживайся и устраивайся поудобнее!",
+            f"Приветствуем в баре, @{user.username}! 🥂 Выбирай лучший столик и отдыхай!",
+            f"О, новый гость! Рады видеть тебя, @{user.username}! 🍸 Отличного вечера!"
+        ]
+        # Бот случайным образом выбирает одну из фраз
+        await self.highrise.chat(random.choice(welcome_messages))
+
+if __name__ == "__main__":
+    room_id = "6851d25724cd01791ef3c7e2"
     token = "93356fc362c144b1364b9b56314cd27400ad3d7737a7eeff88758290dbbae28d"
     
-    bot = MyBot()
-    asyncio.run(main([bot], room_id, token))
+    definitions = [__main__.BotDefinition(BarBot(), room_id, token)]
+    asyncio.run(__main__.main(definitions))
