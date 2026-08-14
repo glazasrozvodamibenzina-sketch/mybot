@@ -6,18 +6,12 @@ from highrise.models import SessionMetadata, User, Position
 
 class MyBot(BaseBot):
     async def on_start(self, session_metadata: SessionMetadata) -> None:
-        print("Бот-бармен успешно заступил на смену!")
-        
-        bot_position = Position(0.5, 0.0, 0.5, "FacingSouth") 
-        try:
-            await self.highrise.walk_to(bot_position)
-        except Exception as e:
-            print(f"Ошибка перемещения: {e}")
+        print("Бот успешно зашел в комнату!")
 
     async def on_user_join(self, user: User, position: Position | None = None) -> None:
         try:
-            # Небольшая пауза, чтобы пользователь окончательно загрузился в комнату
-            await asyncio.sleep(1)
+            # Небольшая задержка, чтобы игрок успел прогрузиться в локации
+            await asyncio.sleep(2)
             
             welcome_messages = [
                 f"Добро пожаловать в наш бар, @{user.username}! 🍹 Присаживайся!",
@@ -26,35 +20,32 @@ class MyBot(BaseBot):
             ]
             await self.highrise.chat(random.choice(welcome_messages))
         except Exception as e:
-            print(f"Ошибка при приветствии пользователя: {e}")
+            print(f"Ошибка при приветствии: {e}")
 
     async def on_chat(self, user: User, message: str) -> None:
         try:
             text = message.strip().lower()
 
-            # Команда !меню
             if text in ["!меню", "!menu"]:
-                await self.highrise.chat(f"@{user.username}, у нас в наличии: 🍹 !коктейль, 🍺 !пиво, ☕ !чай, 🍸 !шторм. Что тебе подать?")
+                await self.highrise.chat(f"@{user.username}, у нас в наличии: 🍹 !коктейль, 🍺 !пиво, ☕ !чай, 🍸 !шторм.")
 
-            # Заказы напитков
             elif text == "!коктейль":
-                drinks = ["Мартини с оливкой 🍸", "Тропический фреш 🍹", "Голубую Лагуну 🍹", "Мохито со льдом 🍹"]
-                await self.highrise.chat(f"Держи твой {random.choice(drinks)}, @{user.username}! Приятного отдыха! ✨")
+                drinks = ["Мартини 🍸", "Тропический фреш 🍹", "Голубую Лагуну 🍹", "Мохито 🍹"]
+                await self.highrise.chat(f"Держи твой {random.choice(drinks)}, @{user.username}! ✨")
 
             elif text == "!пиво":
-                await self.highrise.chat(f"Холодный пенный бокал уже у тебя, @{user.username}! 🍺 За счёт заведения!")
+                await self.highrise.chat(f"Холодный пенный бокал для @{user.username}! 🍺")
 
             elif text in ["!чай", "!кофе"]:
-                await self.highrise.chat(f"Горячий напиток для уютного вечера подано, @{user.username}! ☕ Согревайся!")
+                await self.highrise.chat(f"Горячий напиток для @{user.username}! ☕")
 
             elif text == "!шторм":
-                await self.highrise.chat(f"Ого, крепкий выбор! Спец-коктейль от бармена для @{user.username}! 🧪💥")
+                await self.highrise.chat(f"Спец-коктейль от бармена для @{user.username}! 🧪💥")
 
-            # Ответ на простые приветствия
             elif text in ["привет", "прив", "хей", "hello", "hi"]:
-                await self.highrise.chat(f"Привет-привет, @{user.username}! 👋 Заказывай что-нибудь из !меню!")
+                await self.highrise.chat(f"Привет, @{user.username}! 👋 Напиши !меню в чат!")
         except Exception as e:
-            print(f"Ошибка при обработке чата: {e}")
+            print(f"Ошибка в чате: {e}")
 
 if __name__ == "__main__":
     room_id = os.getenv("ROOM_ID", "6851d25724cd01791ef3c7e2")
