@@ -3,12 +3,11 @@ import random
 from highrise import BaseBot, __main__
 from highrise.models import SessionMetadata, User, Position
 
-class BarBot(BaseBot):
+class MyBot(BaseBot):
     async def on_start(self, session_metadata: SessionMetadata) -> None:
         print("Бот-бармен успешно заступил на смену!")
         
-        # Настройка позиции бота (X, Y, Z, направление)
-        # Если захочешь точнее подвинуть бота, поменяй эти цифры:
+        # Позиция бота в баре
         bot_position = Position(0.5, 0.0, 0.5, "FacingSouth") 
         try:
             await self.highrise.walk_to(bot_position)
@@ -22,12 +21,11 @@ class BarBot(BaseBot):
             f"Приветствуем в баре, @{user.username}! 🥂 Выбирай лучший столик и отдыхай!",
             f"О, новый гость! Рады видеть тебя, @{user.username}! 🍸 Отличного вечера!"
         ]
-        # Бот случайным образом выбирает одну из фраз
         await self.highrise.chat(random.choice(welcome_messages))
 
 if __name__ == "__main__":
     room_id = "6851d25724cd01791ef3c7e2"
     token = "93356fc362c144b1364b9b56314cd27400ad3d7737a7eeff88758290dbbae28d"
     
-    definitions = [__main__.BotDefinition(BarBot(), room_id, token)]
+    definitions = [__main__.BotDefinition(MyBot(), room_id, token)]
     asyncio.run(__main__.main(definitions))
