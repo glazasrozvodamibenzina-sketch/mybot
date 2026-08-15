@@ -2,9 +2,27 @@ import os
 import json
 import asyncio
 import random
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
 from highrise import BaseBot, __main__, User
 from highrise.models import SessionMetadata, Position
 from highrise.__main__ import BotDefinition
+
+# --- ЗАГЛУШКА ДЛЯ БЕСПЛАТНОГО RENDER ---
+class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Bot is alive!")
+
+def run_dummy_server():
+    port = int(os.environ.get("PORT", 8080))
+    server = HTTPServer(("0.0.0.0", port), SimpleHTTPRequestHandler)
+    server.serve_forever()
+
+threading.Thread(target=run_dummy_server, daemon=True).start()
+# ---------------------------------------
 
 ROOM_ID = "6851d25724cd01791ef3c7e2"
 TOKEN = "e50f2af5a9d261b76c044f7a1673563c2bfad96012d0bfe1ed9d4d267930e5f3"
@@ -40,7 +58,6 @@ class BartenderBot(BaseBot):
         try:
             text = message.lower().strip()
 
-            # Установка позиции за стойкой
             if text in ["!bartenderpos", "!бармен"]:
                 room_users = await self.highrise.get_room_users()
                 for room_user, pos in room_users.content:
@@ -52,12 +69,10 @@ class BartenderBot(BaseBot):
                         await self.highrise.chat(f"Готово, @{user.username}! Теперь я за стойкой. 🍸")
                         break
 
-            # Показать меню
             elif text == "!menu":
                 drinks_list = ", ".join(DRINKS)
                 await self.highrise.chat(f"Привет, @{user.username}! У нас есть: {drinks_list}.")
 
-            # Налить случайный напиток
             elif text in ["!налей", "!заказ", "налей"]:
                 drink = random.choice(DRINKS)
                 await self.highrise.chat(f"Держи, @{user.username}! Твой {drink}. Приятного отдыха! 🍹")
