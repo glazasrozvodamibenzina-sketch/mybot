@@ -1,55 +1,87 @@
 import os
-import asyncio
+import json
 import random
+import asyncio
 from highrise import BaseBot, __main__
 from highrise.models import SessionMetadata, User, Position
 
-class MyBot(BaseBot):
+# Файл для сохранения координат
+POS_FILE = "welcome_pos.json"
+
+# Разные варианты приветствий (можешь менять/добавлять фразы)
+GREETINGS = [
+    "Добро пожаловать в комнату, @{user}! ✨ Приятного времяпрепровождения!",
+    "Рады тебя видеть, @{user}! 👋 Вливайся в тусовку!",
+    "Привет, @{user}! 🎉 Чувствуй себя как дома!",
+    "О, новый гость! Приветствую, @{user}! 💫",
+    "Эй, @{user}! Рады твоему приходу! 💖"
+]
+
+class WelcomeBot(BaseBot):
+    def __init__(self):
+        super().__init__()
+        self.saved_position = self.load_position()
+
+    def load_position(self) -> Position | None:
+        """Загрузка сохраненных координат из файла"""
+        if os.path.exists(POS_FILE):
+            try:
+                with open(POS_FILE, "r") as f:
+                    data = json.load(f)
+                    return Position(data["x"], data["y"], data["z"], data.get("facing", "FrontRight"))
+            except Exception as e:
+                print(f"Ошибка чтения позиции: {e}")
+        return None
+
+    def save_position(self, pos: Position):
+        """Сохранение координат в файл"""
+        try:
+            with open(POS_FILE, "w") as f:
+                json.dump({"x": pos.x, "y": pos.y, "z": pos.z, "facing": pos.facing}, f)
+        except Exception as e:
+            print(f"Ошибка сохранения позиции: {e}")
+
     async def on_start(self, session_metadata: SessionMetadata) -> None:
-        print("Бот успешно зашел в комнату!")
+        print("Приветственный бот запущен!")
+        # Если есть сохраненная точка, сразу встаем на неё при запуске
+        if self.saved_position:
+            await asyncio.sleep(3)
+            try:
+                await self.highrise.walk_to(self.saved_position)
+            except Exception as e:
+                print(f"Ошибка перемещения при старте: {e}")
 
     async def on_user_join(self, user: User, position: Position | None = None) -> None:
         try:
-            # Небольшая задержка, чтобы игрок успел прогрузиться в локации
             await asyncio.sleep(2)
-            
-            welcome_messages = [
-                f"Добро пожаловать в наш бар, @{user.username}! 🍹 Присаживайся!",
-                f"Приветствуем, @{user.username}! 🥂 Выбирай столик и отдыхай!",
-                f"О, новый гость! Рады видеть тебя, @{user.username}! 🍸 Напиши !меню в чат!"
-            ]
-            await self.highrise.chat(random.choice(welcome_messages))
+            # Выбираем случайное приветствие
+            greeting = random.choice(GREETINGS).format(user=user.username)
+            await self.highrise.chat(greeting)
         except Exception as e:
-            print(f"Ошибка при приветствии: {e}")
+            print(f"Ошибка приветствия: {e}")
 
     async def on_chat(self, user: User, message: str) -> None:
         try:
             text = message.strip().lower()
 
-            if text in ["!меню", "!menu"]:
-                await self.highrise.chat(f"@{user.username}, у нас в наличии: 🍹 !коктейль, 🍺 !пиво, ☕ !чай, 🍸 !шторм.")
+            # Отдельная команда для установки постоянного места
+            if text in ["!welcomepos", "!встань"]:
+                room_users = await self.highrise.get_room_users()
+                for room_user, pos in room_users.content:
+                    if room_user.id == user.id and isinstance(pos, Position):
+                        self.saved_position = pos
+                        self.save_position(pos)
+                        await self.highrise.walk_to(pos)
+                        await self.highrise.chat("Точка сохранена! Теперь я всегда буду стоять здесь! 📍")
+                        break
 
-            elif text == "!коктейль":
-                drinks = ["Мартини 🍸", "Тропический фреш 🍹", "Голубую Лагуну 🍹", "Мохито 🍹"]
-                await self.highrise.chat(f"Держи твой {random.choice(drinks)}, @{user.username}! ✨")
-
-            elif text == "!пиво":
-                await self.highrise.chat(f"Холодный пенный бокал для @{user.username}! 🍺")
-
-            elif text in ["!чай", "!кофе"]:
-                await self.highrise.chat(f"Горячий напиток для @{user.username}! ☕")
-
-            elif text == "!шторм":
-                await self.highrise.chat(f"Спец-коктейль от бармена для @{user.username}! 🧪💥")
-
-            elif text in ["привет", "прив", "хей", "hello", "hi"]:
-                await self.highrise.chat(f"Привет, @{user.username}! 👋 Напиши !меню в чат!")
         except Exception as e:
-            print(f"Ошибка в чате: {e}")
+            print(f"Ошибка чата: {e}")
 
 if __name__ == "__main__":
-    room_id = os.getenv("ROOM_ID", "6851d25724cd01791ef3c7e2")
-    token = os.getenv("BOT_TOKEN", "93356fc362c144b1364b9b56314cd27400ad3d7737a7eeff88758290dbbae28d")
+    # Вставь сюда данные Приветственного бота
+    room_id = "6851d25724cd01791ef3c7e2"
+    token = "ТВОЙ_ТОКЕН_ПРИВЕТСТВЕННОГО_БОТА"
     
-    definitions = [__main__.BotDefinition(MyBot(), room_id, token)]
+    definitions = [__main__.BotDefinition(WelcomeBot(), room_id, token)]
     asyncio.run(__main__.main(definitions))
