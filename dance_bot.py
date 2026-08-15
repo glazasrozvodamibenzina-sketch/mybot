@@ -3,7 +3,7 @@ import asyncio
 from highrise import BaseBot, __main__
 from highrise.models import SessionMetadata, User, Position
 
-# Полная база танцев (1 - 150)
+# Полная база танцев и эмоций (1 - 150)
 EMOTE_MAP = {
     "1": "idle-dance-casual", "2": "dance-single-1", "3": "dance-single-2", "4": "dance-shoppingcart", 
     "5": "dance-russian", "6": "dance-macarena", "7": "dance-weird", "8": "dance-tiktok2", 
@@ -49,13 +49,24 @@ class DanceBot(BaseBot):
     async def on_start(self, session_metadata: SessionMetadata) -> None:
         print("Дэнс-бот запущен!")
 
+    async def on_user_join(self, user: User, position: Position | None = None) -> None:
+        try:
+            await asyncio.sleep(2)
+            await self.highrise.chat(f"Привет, @{user.username}! 💃 Пиши цифру 1-150 для танца!")
+        except Exception as e:
+            print(f"Ошибка: {e}")
+
     async def on_chat(self, user: User, message: str) -> None:
-        text = message.strip()
-        if text in EMOTE_MAP:
-            await self.highrise.send_emote(EMOTE_MAP[text], user.id)
+        try:
+            text = message.strip()
+            if text in EMOTE_MAP:
+                await self.highrise.send_emote(EMOTE_MAP[text], user.id)
+        except Exception as e:
+            print(f"Ошибка чата: {e}")
 
 if __name__ == "__main__":
-    room_id = os.getenv("ROOM_ID")
-    token = os.getenv("BOT_TOKEN")
+    room_id = "6851d25724cd01791ef3c7e2"
+    token = "487cbb2ce20814c8a24c5845476385762501f1b87c1fb4be97817fbe491456dd"
+    
     definitions = [__main__.BotDefinition(DanceBot(), room_id, token)]
     asyncio.run(__main__.main(definitions))
