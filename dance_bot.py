@@ -106,3 +106,14 @@ if __name__ == "__main__":
     
     definitions = [__main__.BotDefinition(DanceBot(), room_id, token)]
     asyncio.run(__main__.main(definitions))
+    async def on_start(self, session_metadata: SessionMetadata) -> None:
+        print("Дэнс-бот запущен!")
+        try:
+            # Бот надевает вещи по их ID
+            outfit = [
+                Item(type='clothing', amount=1, id='shirt-n_room12019blackshirt', account_bound=False, active_palette=-1),
+                Item(type='clothing', amount=1, id='pants-n_room12019blackpants', account_bound=False, active_palette=-1)
+            ]
+            await self.highrise.set_outfit(outfit)
+        except Exception as e:
+            print(f"Ошибка смены одежды: {e}")
