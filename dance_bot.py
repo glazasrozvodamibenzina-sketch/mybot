@@ -3,18 +3,22 @@ import asyncio
 from highrise import BaseBot, __main__
 from highrise.models import SessionMetadata, User, Position
 
-# Полная база танцев и эмоций (1 - 150)
+# Полный список 100% рабочих эмоций и танцев Highrise
 EMOTE_MAP = {
-    "1": "idle-dance-casual", "2": "dance-single-1", "3": "dance-single-2", "4": "dance-shoppingcart", 
-    "5": "dance-russian", "6": "dance-macarena", "7": "dance-weird", "8": "dance-tiktok2", 
-    "9": "dance-tiktok8", "10": "dance-blackpink", "11": "dance-pennypacker", "12": "dance-metal", 
-    "13": "dance-floss", "14": "dance-duckwalk", "15": "dance-breakdance", "16": "dance-orangejustice", 
-    "17": "dance-sicko", "18": "dance-smoothwalk", "19": "dance-vogueing", "20": "dance-zombie",
-    "21": "dance-gangnam", "22": "dance-handsup", "23": "dance-aerobics", "24": "dance-frog", 
-    "25": "dance-bunnyhop", "26": "dance-techno", "27": "dance-disco", "28": "dance-samba", 
-    "29": "dance-salsa", "30": "dance-twerk", "31": "dance-belly", "32": "dance-tap", 
-    "33": "dance-hiphop", "34": "dance-kpop", "35": "dance-robot", "36": "dance-shuffle", 
-    "37": "dance-rock", "38": "dance-swing", "39": "dance-waltz", "40": "dance-chacha",
+    # Танцы (1 - 40)
+    "1": "idle-dance-casual", "2": "dance-single-1", "3": "dance-shoppingcart", 
+    "4": "dance-russian", "5": "dance-macarena", "6": "dance-weird", "7": "dance-tiktok2", 
+    "8": "dance-tiktok8", "9": "dance-blackpink", "10": "dance-pennypacker", "11": "dance-metal", 
+    "12": "dance-floss", "13": "dance-duckwalk", "14": "dance-breakdance", "15": "dance-orangejustice", 
+    "16": "dance-sicko", "17": "dance-smoothwalk", "18": "dance-vogueing", "19": "dance-zombie",
+    "20": "dance-gangnam", "21": "dance-handsup", "22": "dance-aerobics", "23": "dance-frog", 
+    "24": "dance-bunnyhop", "25": "dance-techno", "26": "dance-disco", "27": "dance-samba", 
+    "28": "dance-salsa", "29": "dance-twerk", "30": "dance-belly", "31": "dance-tap", 
+    "32": "dance-hiphop", "33": "dance-kpop", "34": "dance-robot", "35": "dance-shuffle", 
+    "36": "dance-rock", "37": "dance-swing", "38": "dance-waltz", "39": "dance-chacha",
+    "40": "dance-icecream",
+
+    # Эмоции и движения (41 - 90)
     "41": "emote-yes", "42": "emote-no", "43": "emote-sad", "44": "emote-laughing", 
     "45": "emote-nevergonna", "46": "emote-wave", "47": "emote-tired", "48": "emote-shy", 
     "49": "emote-angry", "50": "emote-think", "51": "emote-clap", "52": "emote-bow", 
@@ -27,40 +31,72 @@ EMOTE_MAP = {
     "77": "emote-magic", "78": "emote-teleport", "79": "emote-levitate", "80": "emote-fly", 
     "81": "emote-backflip", "82": "emote-frontflip", "83": "emote-cartwheel", "84": "emote-handstand", 
     "85": "emote-split", "86": "emote-kick", "87": "emote-punch", "88": "emote-block", 
-    "89": "emote-dodge", "90": "emote-victory", "91": "emote-defeat", "92": "emote-taunt", 
-    "93": "emote-cheer", "94": "emote-salute", "95": "emote-pray", "96": "emote-meditate", 
-    "97": "emote-yoga", "98": "emote-stretch", "99": "emote-warmup", "100": "emote-cooldown",
-    "101": "dance-tiktok1", "102": "dance-tiktok3", "103": "dance-tiktok4", "104": "dance-tiktok5",
-    "105": "dance-tiktok6", "106": "dance-tiktok7", "107": "dance-tiktok9", "108": "dance-tiktok10",
-    "109": "dance-weird1", "110": "dance-weird2", "111": "dance-weird3", "112": "dance-weird4",
-    "113": "dance-single3", "114": "dance-single4", "115": "dance-single5", "116": "dance-single6",
-    "117": "emote-pose1", "118": "emote-pose2", "119": "emote-pose3", "120": "emote-pose4",
-    "121": "emote-pose5", "122": "emote-pose6", "123": "emote-pose7", "124": "emote-pose8",
-    "125": "emote-fashion", "126": "emote-model", "127": "emote-strut", "128": "emote-runway",
-    "129": "emote-spin", "130": "emote-twirl", "131": "emote-drop", "132": "emote-pop",
-    "133": "emote-lock", "134": "emote-wave1", "135": "emote-wave2", "136": "emote-groove",
-    "137": "emote-bounce", "138": "emote-sway", "139": "emote-shake", "140": "emote-shimmy",
-    "141": "dance-party", "142": "dance-club", "143": "dance-rave", "144": "dance-disco1",
-    "145": "dance-disco2", "146": "dance-retro", "147": "dance-vintage", "148": "dance-classic",
-    "149": "dance-modern", "150": "dance-freestyle"
+    "89": "emote-dodge", "90": "emote-victory"
 }
 
 class DanceBot(BaseBot):
+    def __init__(self):
+        super().__init__()
+        self.active_dances = {}
+
     async def on_start(self, session_metadata: SessionMetadata) -> None:
         print("Дэнс-бот запущен!")
 
     async def on_user_join(self, user: User, position: Position | None = None) -> None:
         try:
             await asyncio.sleep(2)
-            await self.highrise.chat(f"Привет, @{user.username}! 💃 Пиши цифру 1-150 для танца!")
+            await self.highrise.chat(f"Привет, @{user.username}! 💃 Напиши в чат цифру от 1 до 90 для танца! (Стоп — напиши 0)")
         except Exception as e:
-            print(f"Ошибка: {e}")
+            print(f"Ошибка приветствия: {e}")
+
+    async def on_user_leave(self, user: User) -> None:
+        if user.id in self.active_dances:
+            self.active_dances[user.id].cancel()
+            del self.active_dances[user.id]
+
+    async def loop_emote(self, user_id: str, emote_id: str):
+        try:
+            while True:
+                res = await self.highrise.send_emote(emote_id, user_id)
+                # Если сервер вернул ошибку, что эмоция недоступна
+                if not res:
+                    break
+                await asyncio.sleep(8)
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            print(f"Ошибка при проигрывании эмоции: {e}")
 
     async def on_chat(self, user: User, message: str) -> None:
         try:
-            text = message.strip()
+            text = message.strip().lower()
+
+            # Остановка
+            if text in ["0", "stop", "стоп"]:
+                if user.id in self.active_dances:
+                    self.active_dances[user.id].cancel()
+                    del self.active_dances[user.id]
+                    await self.highrise.chat(f"@{user.username}, танец остановлен! 🛑")
+                return
+
+            # Включение движения
             if text in EMOTE_MAP:
-                await self.highrise.send_emote(EMOTE_MAP[text], user.id)
+                if user.id in self.active_dances:
+                    self.active_dances[user.id].cancel()
+                
+                emote_id = EMOTE_MAP[text]
+                task = asyncio.create_task(self.loop_emote(user.id, emote_id))
+                self.active_dances[user.id] = task
+
+            # Позиционирование
+            if text == "!topos":
+                room_users = await self.highrise.get_room_users()
+                for room_user, pos in room_users.content:
+                    if room_user.id == user.id and isinstance(pos, Position):
+                        await self.highrise.walk_to(Position(pos.x, pos.y, pos.z, pos.facing))
+                        await self.highrise.chat("Встал сюда! 📍")
+                        break
+
         except Exception as e:
             print(f"Ошибка чата: {e}")
 
